@@ -235,14 +235,19 @@ public with sharing class DMLOperations {
 	 */
 	public static void upsertAccountsWithContacts(List<Contact> contactsToUpsert) {
 		// Loop through each Contact
+        for (Contact con : contactsToUpsert){
 
 		// Extract the Account Name from Contact's LastName
+            String accountName = con.LastName;
 
 		// Get the account based on the name or create one if it doesn't exist
+            Account acc = upsertAccount(accountName);
 
 		// Link the Contact to its Account using the Account Id
-
+            con.AccountId = acc.Id;
+        }
 		// Upsert the Contacts
+        upsert contactsToUpsert;
 	}
 
     /**
