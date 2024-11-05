@@ -167,30 +167,34 @@ public with sharing class DMLOperations {
     public static void upsertOpportunities(String accountName, List<String> oppNames) {
         
         Account acc;
-        
         List<Account> existingAccounts = [SELECT Id FROM Account WHERE Name = :accountName LIMIT 1];
-            if (existingAccounts.isEmpty()){
-                acc = new Account (Name = accountName);
-                    upsert acc;
-            }else {
-                acc = existingAccounts[0];
-            }
+        if (existingAccounts.isEmpty()) {
+            acc = new Account(Name = accountName);
+            upsert acc;
+        } else {
+            acc = existingAccounts[0];
+        }
 
-        List<Opportunity> OppsToUpsert = new List<opportunity>();
+        List<Opportunity> oppsToUpsert = new List<Opportunity>();
 
         // Loop through each Opportunity name
-        for (String oppName : oppNames){
+        for (String oppName : oppNames) {
+            // Check if an opportunity with this name already exists for the account
             List<Opportunity> existingOpps = [SELECT Id, Name, AccountId FROM Opportunity WHERE Name = :oppName AND AccountId = :acc.Id LIMIT 1];
-            // Create an Opportunity with the given name
-        Opportunity opp;
+    
+            Opportunity opp;
             if (existingOpps.isEmpty()) {
-                opp = new Opportunity(Name = oppName, AccountId = acc.Id);
+                // No existing opportunity, create a new one
+                opp = new Opportunity(Name = oppName, AccountId = acc.Id, StageName = 'Prospecting', CloseDate = Date.today().addDays(30));
             } else {
+                // Use the existing opportunity
                 opp = existingOpps[0];
             }
+    
             // Add the Opportunity to the list
             oppsToUpsert.add(opp);
         }
+ 
         upsert oppsToUpsert;
     }
     
@@ -214,8 +218,7 @@ public with sharing class DMLOperations {
                 acc.Description = 'Updated Account';
 		// otherwise, create a new Account and set the description
         }else {
-            acc = new Account (Name = accountName);
-            acc.Description = 'New Account';
+            acc = new Account (Name = accountName, Description = 'New Account');
         }
 
 		// Upsert the Account
@@ -280,8 +283,18 @@ public with sharing class DMLOperations {
      * @param numOfCases The number of cases to create.
      */
     public static void createAndDeleteCases(String accountId, Integer numOfCases) {
+        List<Case> cases = new List<Case>();
+
+        for (Integer i = 0; i < numOfCases; i++){
+                Case caseToInsert = new Case(AccountId = accountId, Status = 'New', Origin = 'Web');
+
+                // Add the case to the list
+                cases.add(caseToInsert);
+        }
         // Insert the cases
+        insert cases;
 
         // Delete the cases
+        delete cases;
     }
 }
